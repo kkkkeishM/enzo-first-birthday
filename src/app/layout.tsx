@@ -18,7 +18,7 @@ const body = Nunito({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://enzo-rsvp.vercel.app"), // your real live URL
+  metadataBase: new URL("https://enzo-first-birthday.vercel.app"), // your real live URL
   title: "Enzo's First Race Day",
   description: "The engines are ready, the track is set, and our little racer is turning ONE!. Tap to see more details 🏁",
   openGraph: {
