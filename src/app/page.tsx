@@ -4,6 +4,7 @@ import Wipe from "@/components/Wipe";
 import Envelope from "@/components/Envelope";
 import Cover from "@/components/Cover";
 import Invitation from "@/components/Invitation";
+import MusicButton from "@/components/MusicButton";
 
 type Screen = "envelope" | "cover" | "invite";
 type WipePhase = "idle" | "in" | "out";
@@ -38,6 +39,7 @@ export default function Home() {
   return (
     <>
       <Wipe phase={wipe} />
+      {screen !== "envelope" && <MusicButton />}
       {screen === "envelope" && <Envelope onOpened={() => goTo("cover")} />}
       {screen === "cover" && (
           <Cover

@@ -839,3 +839,18 @@ button:focus:not(:focus-visible){outline:none}
 .bl-body{touch-action:none;cursor:grab}
 .bl-body:active{cursor:grabbing}
 .bl-body.photo{cursor:grab}
+
+/* ===== Music button ===== */
+.music-btn{
+  position:fixed;z-index:30;
+  top:max(12px,env(safe-area-inset-top));
+  right:max(12px,env(safe-area-inset-right));
+  width:2.6rem;height:2.6rem;display:grid;place-items:center;
+  font-size:1.2rem;background:#fff;
+  border:3px solid var(--ink);border-radius:50%;
+  box-shadow:0 3px 0 var(--ink);cursor:pointer;
+  transition:transform .12s,box-shadow .12s;
+}
+.music-btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+.music-btn:focus-visible{outline:4px solid var(--blue);outline-offset:3px}
+@media (prefers-reduced-motion:reduce){.music-btn{transition:none}}
