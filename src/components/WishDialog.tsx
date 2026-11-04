@@ -5,6 +5,10 @@ import { createPortal } from "react-dom";
 const MAX_MESSAGE = 280;
 const MAX_AUTHOR = 40;
 
+
+// "Jey Santos" -> "Jey"
+const firstName = (full: string) => full.trim().split(/\s+/)[0] ?? "";
+
 export default function WishDialog({
   open, initialName, onClose, onSent,
 }: {
@@ -13,6 +17,7 @@ export default function WishDialog({
   onClose: () => void;
   onSent: (pending: boolean) => void;
 }) {
+  const [title, setTitle] = useState("");
   const [author, setAuthor] = useState(initialName);
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
@@ -23,6 +28,7 @@ export default function WishDialog({
   useEffect(() => {
     if (!open) return;
     setAuthor(initialName);
+    setTitle("");
     setError("");
     const t = window.setTimeout(() => msgRef.current?.focus(), 60);
     return () => window.clearTimeout(t);
@@ -42,7 +48,7 @@ export default function WishDialog({
       const res = await fetch("/api/wishes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ author: author.trim(), message: message.trim() }),
+        body: JSON.stringify({ author: displayName.slice(0, MAX_AUTHOR), message: message.trim() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -59,6 +65,9 @@ export default function WishDialog({
     }
   }
 
+  const callName = [title.trim(), firstName(author)].filter(Boolean).join(" ");
+  const displayName = [title.trim(), author.trim()].filter(Boolean).join(" ");
+
   return createPortal(
     <div
       className="modal-back"
@@ -69,19 +78,31 @@ export default function WishDialog({
       }}
     >
       <form className="modal wish-form" role="dialog" aria-modal="true" aria-labelledby="wish-title" onClick={(e) => e.stopPropagation()} onSubmit={send} noValidate>
+
         <h3 id="wish-title">Birthday wish for Enzo 🎈</h3>
+ 
 
-        <label htmlFor="wish-author">Your name</label>
-        <input id="wish-author" type="text" maxLength={MAX_AUTHOR} autoComplete="name" value={author} onChange={(e) => setAuthor(e.target.value)} />
-
-        <label htmlFor="wish-message">Your wish</label>
-        <textarea id="wish-message" ref={msgRef} rows={4} maxLength={MAX_MESSAGE} placeholder="Happy 1st birthday, Enzo!" value={message} onChange={(e) => setMessage(e.target.value)} />
-        <small className="wish-count">{message.length}/{MAX_MESSAGE}</small>
-
-        <p className="err" role="alert">{error}</p>
+      <label htmlFor="wish-message">
+        {callName ? `Hi! ${callName}, what’s your wish for Enzo?` : "Your wish"}
+      </label>
+      <textarea
+        id="wish-message"
+        ref={msgRef}
+        rows={4}
+        maxLength={MAX_MESSAGE}
+        placeholder="Your sweet message goes here...."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      <small className="wish-count">{message.length}/{MAX_MESSAGE}</small>
+      <p className="err" role="alert">{error}</p>
         <div className="modal-actions">
-          <button type="button" className="btn-sm alt" disabled={sending} onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn-sm" disabled={sending}>{sending ? "Sending..." : "Send my wish"}</button>
+          <button type="button" className="btn-sm alt" disabled={sending} onClick={onClose}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-sm" disabled={sending}>
+            {sending ? "Sending..." : "Send my wish"}
+          </button>
         </div>
       </form>
     </div>,

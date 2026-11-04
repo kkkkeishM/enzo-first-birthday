@@ -3,7 +3,7 @@ import { useState } from "react";
 import { createPortal } from "react-dom";
 import { WALL_PHOTOS, BLANK_CAPTIONS } from "@/lib/wall";
 
-const SLOTS = 20;
+const SLOTS = 30;
 
 type Slot = { src?: string; caption?: string };
 

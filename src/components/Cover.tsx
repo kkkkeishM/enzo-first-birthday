@@ -23,7 +23,7 @@ function makeLanes(): Lane[] {
 }
 
 
-export default function Cover({ onEnter, onBack }: { onEnter: () => void; onBack: () => void  }) {
+export default function Cover({ onEnter, onBack, onHome }: { onEnter: () => void; onBack: () => void; onHome?: () => void }) {
   const [lanes] = useState<Lane[]>(makeLanes);
   const [revving, setRevving] = useState(false);
   const [blast, setBlast] = useState(false);
@@ -90,6 +90,11 @@ export default function Cover({ onEnter, onBack }: { onEnter: () => void; onBack
   function goBack() {
     if (done.current) return;
     onBack();
+  }
+
+  function goHome() {
+    if (done.current) return;
+    onHome?.();
   }
 
   return (
@@ -176,7 +181,9 @@ export default function Cover({ onEnter, onBack }: { onEnter: () => void; onBack
         <span aria-hidden="true">🏁</span> Skip the rev
         </button>
       </div>
-      <BackButton onClick={goBack} label="Back" />
+      <div className="cover-nav">
+        <BackButton onClick={goBack} label="Back" />
+      </div>
 
     </main>
   );

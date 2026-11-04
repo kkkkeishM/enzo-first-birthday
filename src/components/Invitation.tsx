@@ -15,9 +15,20 @@ const Arrow = ({ dir }: { dir: "left" | "right" }) => (
   </svg>
 );
 
-export default function Invitation({ onBack }: { onBack: () => void }) {
+const PinIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
+  </svg>
+);
+
+const NavIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 2 4.5 21l7.5-4 7.5 4z" />
+  </svg>
+);
+
+export default function Invitation({ onBack, onHome }: { onBack: () => void; onHome?: () => void }) {
   const [i, setI] = useState(0);
-  const touchX = useRef<number | null>(null);
   const [giftOpen, setGiftOpen] = useState(false);
   const [wallIntroDone, setWallIntroDone] = useState(false);
   const finishIntro = useCallback(() => setWallIntroDone(true), []);
@@ -33,17 +44,6 @@ export default function Invitation({ onBack }: { onBack: () => void }) {
   const prev = () => (i === 0 ? onBack() : setI((v) => v - 1));
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      const tag = (e.target as HTMLElement).tagName;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
-      if (e.key === "ArrowRight") setI((v) => (v === 3 && !wallOpen ? v : Math.min(v + 1, LAST)));
-      if (e.key === "ArrowLeft") setI((v) => Math.max(v - 1, 0));
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [wallOpen]);
-
-  useEffect(() => {
     if (i !== 4) setWallIntroDone(false);
   }, [i]);
 
@@ -57,26 +57,33 @@ export default function Invitation({ onBack }: { onBack: () => void }) {
     return () => cancelAnimationFrame(id);
   }, [giftOpen]);
 
+  useEffect(() => {
+    if (i !== 4) setWallIntroDone(false);
+  }, [i]);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("enzo-wished") === "1") {
+        setWished(true);
+        setWallOpen(true);
+      }
+    } catch {}
+  }, []);
+
   const sp = (n: number) => ({
     className: `slide bg-${n + 1}${i === n ? " active" : ""}`,
     inert: i !== n,
     "aria-hidden": i !== n,
   });
 
- 
+  const HomeIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 11 L12 4 L20 11 M6.5 9.5 V19 H17.5 V9.5" />
+    </svg>
+  );
 
   return (
-    <main
-      className="invite-screen"
-      onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
-      onTouchEnd={(e) => {
-        if (touchX.current === null) return;
-        const dx = e.changedTouches[0].clientX - touchX.current;
-        touchX.current = null;
-        if (dx < -60) next();
-        if (dx > 60 && i > 0) prev();
-      }}
-    >
+    <main className="invite-screen">
       <div className="slides" style={{ transform: `translateX(-${i * 100}%)` }}>
         {/* Slide 1: welcome + schedule */}
         <section {...sp(0)}>
@@ -112,11 +119,27 @@ export default function Invitation({ onBack }: { onBack: () => void }) {
                 <span className="venue-address">{EVENT.address}</span>
               </p>
               <div className="dir-links">
-                <a className="link" href={googleDirections(EVENT.address)} target="_blank" rel="noopener noreferrer">
-                  Google Maps
+                <a
+                  className="dir-btn gmaps"
+                  href={googleDirections(EVENT.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="dir-ico"><PinIcon /></span>
+                  <span className="dir-txt">
+                    <b>Google Maps</b>
+                  </span>
                 </a>
-                <a className="link waze" href={wazeDirections(EVENT.address)} target="_blank" rel="noopener noreferrer">
-                  Waze
+                <a
+                  className="dir-btn waze"
+                  href={wazeDirections(EVENT.address)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span className="dir-ico"><NavIcon /></span>
+                  <span className="dir-txt">
+                    <b>Waze</b>
+                  </span>
                 </a>
               </div>
             </div>
@@ -158,11 +181,15 @@ export default function Invitation({ onBack }: { onBack: () => void }) {
         <section {...sp(3)}>
           <div className="slide-body">
           <RsvpForm
-              heading="Be Part of the Fun"
-              onWrite={(name) => setWish({ open: true, name })}
-              wished={wished}
-              onOpenWall={() => { setWallOpen(true); setI(4); }}
-            />
+            heading="Be Part of the Fun"
+            onWrite={(name) => setWish({ open: true, name })}
+            wished={wished}
+            onOpenWall={() => { setWallOpen(true); setI(4); }}
+            onReset={() => {
+              try { localStorage.removeItem("enzo-wished"); } catch {}
+              setWished(false);
+            }}
+          />
           </div>
         </section>
 
@@ -199,6 +226,10 @@ export default function Invitation({ onBack }: { onBack: () => void }) {
         {i < LAST && i !== 3 ? (
           <button className="nav-next" type="button" onClick={next}>
             Next <Arrow dir="right" />
+          </button>
+        ) : onHome ? (
+          <button className="nav-home" type="button" onClick={onHome}>
+            <span className="nav-home-ico"><HomeIcon /></span>
           </button>
         ) : (
           <span />
@@ -250,12 +281,13 @@ export default function Invitation({ onBack }: { onBack: () => void }) {
         )}
 
       {i === 4 && !wallIntroDone && <WallIntro onDone={finishIntro} />}   
-
+      
       <WishDialog
         open={wish.open}
         initialName={wish.name}
         onClose={() => setWish({ open: false, name: "" })}
         onSent={(pending) => {
+          try { localStorage.setItem("enzo-wished", "1"); } catch {}   // <-- add this line
           setWallOpen(true); setI(4);
           setWished(true);
           setWish({ open: false, name: "" });

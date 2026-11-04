@@ -20,7 +20,7 @@ function Confetti() {
   useEffect(() => {
     const t = window.setTimeout(() => setShow(false), 5500);
     return () => window.clearTimeout(t);
-  }, []);
+  }, []); 
   if (!show) return null;
   // rendered on <body>: the slides are transformed, which would misplace a fixed element
   return createPortal(
@@ -67,7 +67,7 @@ function NameList({
           <input
             type="text"
             aria-label={`${label} ${i + 1} full name`}
-            placeholder="Full name"
+            placeholder="Full Name"
             autoComplete="off"
             maxLength={MAX_NAME_LENGTH}
             value={n}
@@ -90,12 +90,13 @@ function NameList({
 }
 
 export default function RsvpForm({
-  heading, onWrite, wished, onOpenWall,
+  heading, onWrite, wished, onOpenWall, onReset,
   }: {
     heading?: string;
     onWrite?: (name: string) => void;
     wished?: boolean;
     onOpenWall?: () => void;
+    onReset?: () => void;
   }) {
   const [name, setName] = useState("");
   const [attending, setAttending] = useState<Answer>("yes");
@@ -115,11 +116,24 @@ export default function RsvpForm({
 
   const lock = useRef(false); // stops double-taps before React re-renders
   const confirmRef = useRef<HTMLButtonElement>(null);
-
+  const [restored, setRestored] = useState(false);
+  
   // load this guest's allowance from their personal link (?code=...)
   useEffect(() => {
     const c = new URLSearchParams(window.location.search).get("code")?.trim() || null;
     setCode(c);
+    try {
+      const saved = localStorage.getItem(`enzo-rsvp:${c ?? "none"}`);
+      if (saved) {
+        const s = JSON.parse(saved);
+        setName(s.name ?? "");
+        setAttending(s.attending === "no" ? "no" : "yes");
+        setFinalParty(s.party ?? 1);
+        setRestored(true);
+        setStatus("done");
+        lock.current = true; // no second submission
+      }
+    } catch {}
     const ctrl = new AbortController();
     fetch(`/api/invite${c ? `?code=${encodeURIComponent(c)}` : ""}`, { signal: ctrl.signal })
       .then(async (r) => {
@@ -146,6 +160,7 @@ export default function RsvpForm({
 
   function chooseAttending(v: Answer) {
     setAttending(v);
+    setNotes(""); // different question for each answer, so start fresh
     if (v === "no") {
       setBringAdult("no"); setAdults([""]);
       setBringKids("no"); setKids([""]);
@@ -163,6 +178,7 @@ export default function RsvpForm({
   function validate(): string {
     if (blocked) return blocked;
     if (!name.trim()) return "Enter your name so we know who is on the grid.";
+    if (!going && !notes.trim()) return "Please let us know why you can't make it.";
     if (!going) return "";
     if (bringAdult === "yes" && adults.some((n) => !n.trim())) return "Enter the full name of your adult guest.";
     if (bringKids === "yes" && kids.some((n) => !n.trim())) return "Enter the full name of every child, or remove the empty fields.";
@@ -207,6 +223,12 @@ export default function RsvpForm({
         return;
       }
       setFinalParty(data.party ?? party);
+      try {
+        localStorage.setItem(
+          `enzo-rsvp:${code ?? "none"}`,
+          JSON.stringify({ name: name.trim(), attending, party: data.party ?? party })
+        );
+      } catch {}
       setConfirming(false);
       setStatus("done"); // lock stays on: no second submission
     } catch {
@@ -217,17 +239,65 @@ export default function RsvpForm({
     }
   }
 
+  function startNew() {
+    try { localStorage.removeItem(`enzo-rsvp:${code ?? "none"}`); } catch {}
+    setName("");
+    setAttending("yes");
+    setBringAdult("no"); setAdults([""]);
+    setBringKids("no"); setKids([""]);
+    setNotes("");
+    setError("");
+    setConfirming(false);
+    setRestored(false);
+    setStatus("idle");
+    lock.current = false;
+    onReset?.();
+  }
+
+  if (status === "done" && restored) {
+    return (
+      <div className="done" role="status">
+        <h2>You’re all set! 🏁</h2>
+        <p>We've received your response. No further action is needed</p>
+        {onOpenWall && (
+          <button type="button" className="btn wish-btn" onClick={onOpenWall}>
+            See all wishes🖼️
+          </button>
+        )}
+       <button type="button" className="done-new" onClick={startNew}>
+          <span className="done-new-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 12a8 8 0 0 1 13.5-5.8L20 8.5M20 4v4.5h-4.5M20 12a8 8 0 0 1-13.5 5.8L4 15.5M4 20v-4.5h4.5" />
+            </svg>
+          </span>
+          Not you? RSVP for someone else
+        </button>
+      </div>
+    );
+  }
+
   if (status === "done") {
     const first = name.trim().split(" ")[0];
     return (
       <div className="done" role="status">
-        {going && <Confetti />}
-        <h2>{going ? "Buckle Up, We're celebrating!" : `No worries, ${first}!`}</h2>
-        <p>
-          {going
-            ? `Thanks, ${first}. We saved ${finalParty} ${finalParty === 1 ? "spot" : "spots"} for your crew. See you at the track!`
-            : "Thanks for letting us know. We'll celebrate with you another time. Sending lots of love from Enzo!"}
-        </p>
+        {going && !restored && <Confetti />}
+        <h2>{going ? "Buckle Up, We're celebrating!" : `No worries, ${first}!`}❤️</h2>
+        {going ? (
+           <p>
+           {`Thanks, ${first}. We saved ${finalParty} ${finalParty === 1 ? "spot" : "spots"} for your crew.`}
+           <br />
+           Can't wait to celebrate with you. See you at the track!👋🏻
+         </p>
+        ) : (
+          <>
+            <p>
+              We would’ve loved to celebrate Enzo’s special day with you, but we completely understand. Thank you for letting us know!
+            </p>
+            <p>
+              Even if you can’t make it, you can still send Enzo some love through a little birthday wish. 🌠
+            </p>
+          </>
+        )}
         {wished ? (
           <>
             {onOpenWall && (
@@ -239,7 +309,7 @@ export default function RsvpForm({
         ) : (
           onWrite && (
             <button type="button" className="btn wish-btn" onClick={() => onWrite(name.trim())}>
-              Write a birthday wish🌠
+              Leave a Birthday Wish for Enzo ♡
             </button>
           )
         )}
@@ -256,8 +326,8 @@ export default function RsvpForm({
         {info.full && <p className="rsvp-note">The party is almost full, so new spots may no longer be available.</p>}
 
         <div>
-          <label htmlFor="rsvp-name">Your name</label>
-          <input id="rsvp-name" type="text" autoComplete="name" placeholder="Full name" maxLength={MAX_NAME_LENGTH} value={name} onChange={(e) => setName(e.target.value)} />
+          <label htmlFor="rsvp-name">Your name:</label>
+          <input id="rsvp-name" type="text" autoComplete="name" placeholder="Enter your name" maxLength={MAX_NAME_LENGTH} value={name} onChange={(e) => setName(e.target.value)} />
         </div>
 
         <div>
@@ -293,8 +363,16 @@ export default function RsvpForm({
         )}
 
         <div>
-          <label htmlFor="rsvp-notes">Food allergies or notes (optional)</label>
-          <textarea id="rsvp-notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <label htmlFor="rsvp-notes">
+            {going ? "Food allergies or notes (optional)" : "Reason for not attending:"}
+          </label>
+          <textarea
+            id="rsvp-notes"
+            rows={2}
+            placeholder={going ? "" : "Let us know why you can't make it"}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
         </div>
 
         <p className="err" role="alert">{error}</p>
@@ -313,27 +391,52 @@ export default function RsvpForm({
               e.stopPropagation(); // keep arrow keys from changing slides behind the dialog
             }}
           >
-            <div className="modal" role="dialog" aria-modal="true" aria-labelledby="cf-title" onClick={(e) => e.stopPropagation()}>
-              <h3 id="cf-title">Confirm your RSVP</h3>
-              <ul className="modal-list">
-                <li><b>Name:</b> {name.trim()}</li>
+            <div className="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="cf-title" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-strip" aria-hidden="true" />
+
+              <div className="modal-head">
+                <span className="modal-badge" aria-hidden="true">{going ? "🏁" : "👋"}</span>
+                <div>
+                  <h3 id="cf-title">Confirmation</h3>
+                  <p className="modal-sub">{going ? "Ready to hit the track?" : "One last check before you send"}</p>
+                </div>
+              </div>
+
+              <dl className="cf-list">
+                <div><dt>Name</dt><dd>{name.trim()}</dd></div>
                 {going ? (
                   <>
-                    <li><b>Adult guest{adultCount > 1 ? "s" : ""}:</b> {adultCount ? adults.map((n) => n.trim()).join(", ") : "None"}</li>
-                    <li><b>Kids:</b> {kidCount ? kids.map((n) => n.trim()).join(", ") : "None"}</li>
-                    <li><b>Total attending:</b> {party}</li>
+                    <div><dt>Adult guest{adultCount > 1 ? "s" : ""}</dt><dd>{adultCount ? adults.map((n) => n.trim()).join(", ") : "None"}</dd></div>
+                    <div><dt>Kids</dt><dd>{kidCount ? kids.map((n) => n.trim()).join(", ") : "None"}</dd></div>
                   </>
                 ) : (
-                  <li>You’re letting us know you can’t make it.</li>
+                  <>
+                    <div><dt>Status</dt><dd>Can’t make it</dd></div>
+                    {notes.trim() && <div><dt>Reason</dt><dd>{notes.trim()}</dd></div>}
+                  </>
                 )}
-              </ul>
+              </dl>
+
+              {going && (
+                <div className="cf-total">
+                  <span>Total attending</span>
+                  <b>{party}</b>
+                </div>
+              )}
+
               <p className="modal-warn">
-                {going
-                  ? "Please double-check every name. Guest slots are limited, and your group will be counted right away."
-                  : "Are you sure? You can send a new reply later using the same link."}
+                <span aria-hidden="true">⚠️</span>
+                <span>
+                  {going
+                    ? "Please double-check every name. Guest slots are limited, and your group will be counted right away."
+                    : "Are you sure? You can send a new reply later using the same link."}
+                </span>
               </p>
+
               <div className="modal-actions">
-                <button type="button" className="btn-sm alt" disabled={status === "sending"} onClick={() => setConfirming(false)}>Go back</button>
+                <button type="button" className="btn-sm alt" disabled={status === "sending"} onClick={() => setConfirming(false)}>
+                  Go back
+                </button>
                 <button type="button" className="btn-sm" ref={confirmRef} disabled={status === "sending"} onClick={send}>
                   {status === "sending" ? "Sending..." : going ? "Yes, rev me in!" : "Yes, send it"}
                 </button>

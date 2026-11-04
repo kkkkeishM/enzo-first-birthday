@@ -68,6 +68,62 @@ export default function WishWall({
     [wishes]
   );
 
+
+  useEffect(() => {
+    const wall = document.querySelector<HTMLElement>(".wall");
+    if (!wall) return;
+  
+    const offsets = new WeakMap<HTMLElement, [number, number]>();
+    let drag: { el: HTMLElement; sx: number; sy: number; ox: number; oy: number; moved: boolean } | null = null;
+  
+    const eatClick = (ev: Event) => { ev.stopPropagation(); ev.preventDefault(); };
+  
+    const down = (e: PointerEvent) => {
+      const body = (e.target as HTMLElement).closest<HTMLElement>(".bl-body");
+      const el = body?.closest<HTMLElement>(".bl");
+      if (!body || !el) return;
+      const [ox, oy] = offsets.get(el) ?? [0, 0];
+      drag = { el, sx: e.clientX, sy: e.clientY, ox, oy, moved: false };
+      body.setPointerCapture(e.pointerId);
+    };
+  
+    const move = (e: PointerEvent) => {
+      if (!drag) return;
+      const dx = e.clientX - drag.sx;
+      const dy = e.clientY - drag.sy;
+      if (!drag.moved && Math.hypot(dx, dy) > 6) {
+        drag.moved = true;
+        drag.el.style.animationPlayState = "paused";
+        drag.el.style.zIndex = "5";
+      }
+      if (drag.moved) drag.el.style.translate = `${drag.ox + dx}px ${drag.oy + dy}px`;
+    };
+  
+    const up = (e: PointerEvent) => {
+      if (!drag) return;
+      const { el, sx, sy, ox, oy, moved } = drag;
+      drag = null;
+      if (!moved) return;
+      offsets.set(el, [ox + e.clientX - sx, oy + e.clientY - sy]);
+      el.style.animationPlayState = "";
+      el.style.zIndex = "";
+      // a drag should not count as a tap that opens the wish
+      window.addEventListener("click", eatClick, { capture: true, once: true });
+      window.setTimeout(() => window.removeEventListener("click", eatClick, { capture: true }), 0);
+    };
+  
+    wall.addEventListener("pointerdown", down);
+    wall.addEventListener("pointermove", move);
+    wall.addEventListener("pointerup", up);
+    wall.addEventListener("pointercancel", up);
+    return () => {
+      wall.removeEventListener("pointerdown", down);
+      wall.removeEventListener("pointermove", move);
+      wall.removeEventListener("pointerup", up);
+      wall.removeEventListener("pointercancel", up);
+    };
+  }, []);
+  
   return (
     <div className="wall">
       {/* the polaroid photo wall sits behind everything */}
