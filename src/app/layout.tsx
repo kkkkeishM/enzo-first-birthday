@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   description: "The engines are ready, the track is set, and our little racer is turning ONE!. Tap to see more details 🏁",
   openGraph: {
     title: "Enzo's First Race Day",
-    description: "The engines are ready, the track is set, and our little racer is turning ONE!. Tap to see more details 🏁",
+    description: "The engines are ready, the track is set, and our little racer is turning ONE!. Join us to celebrate Enzo's Day. Tap to see more details 🏁",
     url: "/",
     siteName: "Enzo's First Race Day",
     type: "website",
