@@ -26,3 +26,9 @@ export function subscribeMusic(cb: () => void) {
   listeners.add(cb);
   return () => { listeners.delete(cb); };
 }
+
+export function stopMusic() {
+  if (!audio) return;
+  audio.pause();
+  audio.currentTime = 0;
+}

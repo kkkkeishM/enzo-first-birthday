@@ -258,7 +258,10 @@ export default function RsvpForm({
     return (
       <div className="done" role="status">
         <h2>You’re all set! 🏁</h2>
-        <p>We've received your response. No further action is needed</p>
+        <>
+        <p>We've received your response.</p>
+        <p>No further action is needed</p>
+        </>
         {onOpenWall && (
           <button type="button" className="btn wish-btn" onClick={onOpenWall}>
             See all wishes🖼️

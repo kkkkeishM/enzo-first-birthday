@@ -5,6 +5,7 @@ import Envelope from "@/components/Envelope";
 import Cover from "@/components/Cover";
 import Invitation from "@/components/Invitation";
 import MusicButton from "@/components/MusicButton";
+import { stopMusic } from "@/lib/music";
 
 type Screen = "envelope" | "cover" | "invite";
 type WipePhase = "idle" | "in" | "out";
@@ -25,6 +26,7 @@ export default function Home() {
       }
     } catch {}
   }, []);
+
   
   function goTo(next: Screen) {
     if (wipe !== "idle") return; // ignore taps while a transition is running
@@ -36,6 +38,12 @@ export default function Home() {
     setTimeout(() => setWipe("idle"), 1300);
   }
 
+  function goHome() {
+    if (wipe !== "idle") return; // same guard as goTo, so a tap during a transition does nothing
+    stopMusic();
+    goTo("envelope");
+  }
+
   return (
     <>
       <Wipe phase={wipe} />
@@ -45,11 +53,11 @@ export default function Home() {
           <Cover
             onEnter={() => goTo("invite")}
             onBack={() => goTo("envelope")}
-            onHome={() => goTo("envelope")}
+            onHome={goHome}
           />
         )}
       {screen === "invite" && (
-        <Invitation onBack={() => goTo("cover")} onHome={() => goTo("cover")} />
+        <Invitation onBack={() => goTo("cover")} onHome={goHome} />
       )}
     </>
   );
