@@ -854,3 +854,10 @@ button:focus:not(:focus-visible){outline:none}
 .music-btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
 .music-btn:focus-visible{outline:4px solid var(--blue);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){.music-btn{transition:none}}
+
+
+/*FOR THE DATABASE*/
+.btn-sm.danger{background:#c0392b;color:#fff}
+.btn-sm:disabled{opacity:.6;cursor:wait}
+.rel.ninang{background:#ffd6e8}
+.rel.ninong{background:#c9e7ff}

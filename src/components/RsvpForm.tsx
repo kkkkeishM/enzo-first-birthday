@@ -67,7 +67,7 @@ function NameList({
           <input
             type="text"
             aria-label={`${label} ${i + 1} full name`}
-            placeholder="Full Name"
+            placeholder="Name"
             autoComplete="off"
             maxLength={MAX_NAME_LENGTH}
             value={n}
@@ -88,6 +88,9 @@ function NameList({
     </div>
   );
 }
+
+// "y and x", "A & B", "A, B" count as one box, so we block them
+const looksLikeTwoNames = (n: string) => /\b(and|or)\b|[&+/,]/i.test(n);
 
 export default function RsvpForm({
   heading, onWrite, wished, onOpenWall, onReset,
@@ -180,8 +183,10 @@ export default function RsvpForm({
     if (!name.trim()) return "Enter your name so we know who is on the grid.";
     if (!going && !notes.trim()) return "Please let us know why you can't make it.";
     if (!going) return "";
-    if (bringAdult === "yes" && adults.some((n) => !n.trim())) return "Enter the full name of your adult guest.";
-    if (bringKids === "yes" && kids.some((n) => !n.trim())) return "Enter the full name of every child, or remove the empty fields.";
+    if (bringAdult === "yes" && adults.some(looksLikeTwoNames)) return "Please enter one name per box. Tap “Add another adult” for each person.";
+    if (bringKids === "yes" && kids.some(looksLikeTwoNames)) return "Please enter one name per box. Tap “Add another child” for each child.";
+    if (bringAdult === "yes" && adults.some((n) => !n.trim())) return "Enter the name of your adult guest.";
+    if (bringKids === "yes" && kids.some((n) => !n.trim())) return "Enter the name of every child, or remove the empty fields.";
     if (party > info.maxGuests) return `Your invitation includes up to ${info.maxGuests} guests, including you.`;
     return "";
   }

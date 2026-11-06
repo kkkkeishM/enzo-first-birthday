@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import PolaroidWall from "./Polaroidwall";
+import { shortName } from "@/lib/wishName";
 
 type Wish = { id: string; author: string; message: string; at: string };
 type Item = { key: string; wish: Wish };
@@ -145,7 +146,7 @@ export default function WishWall({
 
       {/* plain list for screen readers */}
       <ul className="wall-sr">
-        {wishes.map((w) => <li key={w.id}>{w.author}: {w.message}</li>)}
+        {wishes.map((w) => <li key={w.id}>{shortName(w.author)}: {w.message}</li>)}
       </ul>
 
       <div className="wall-actions">
@@ -168,7 +169,7 @@ export default function WishWall({
             onKeyDown={(e) => { if (e.key === "Escape") setRead(null); e.stopPropagation(); }}
           >
             <div className="modal" role="dialog" aria-modal="true" aria-label={`Wish from ${read.author}`} onClick={(e) => e.stopPropagation()}>
-              <h3>From {read.author}</h3>
+              <h3>From {shortName(read.author)}</h3>
               <p className="wish-full">{read.message}</p>
               <div className="modal-actions">
                 <button type="button" className="btn-sm" autoFocus onClick={() => setRead(null)}>Close</button>
@@ -189,7 +190,7 @@ export default function WishWall({
               <h3>All birthday wishes</h3>
               <ul className="wish-list">
                 {wishes.map((w) => (
-                  <li key={w.id}><b>{w.author}</b><span>{w.message}</span></li>
+                  <li key={w.id}><b>{shortName(w.author)}</b><span>{w.message}</span></li>
                 ))}
               </ul>
               <div className="modal-actions">
